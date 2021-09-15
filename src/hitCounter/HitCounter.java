@@ -2,6 +2,7 @@ package hitCounter;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -17,10 +18,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoundedRangeModel;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
+import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.GroupLayout.ParallelGroup;
@@ -38,15 +41,24 @@ import javax.swing.JMenuItem;
 
 public class HitCounter implements ActionListener, MouseListener {
 
+	/**************************
+	 * Final Static Variables *
+	 **************************/
+	
     final static int rgbHLBlue=new Color(127, 100, 228).getRGB();
     final static int rgbHLGreen=new Color(100, 228, 127).getRGB();
     final static int rgbHLRed=new Color(228, 127, 100).getRGB();
+    final static int rgbHLGold=new Color(235, 200, 115).getRGB();
     
-    final static int splitWidth=200;
-    final static int hitWidth=200;
-    final static int diffWidth=200;
-    final static int pbWidth=200;
+    final static int splitWidth=150;
+    final static int hitWidth=50;
+    final static int diffWidth=50;
+    final static int pbWidth=50;
 
+    /*****************************
+     * Declare private variables *
+     *****************************/
+    
     private String userSaveFilePathString = System.getProperty("user.dir") + System.getProperty("file.separator")
 											+ "resources" + System.getProperty("file.separator") + "usersave.txt";
 	
@@ -54,7 +66,11 @@ public class HitCounter implements ActionListener, MouseListener {
     
     private JMenuBar menuBar;
 	private JMenu fileMenu;
+	private JMenu editMenu;
 	private JMenuItem saveMenuItem;
+	private JMenuItem incHitMenuItem;
+	private JMenuItem decHitMenuItem;
+	private JMenuItem nextSplitMenuItem;
 	
 	private JFrame frame;
 	private JPanel panel;
@@ -85,21 +101,43 @@ public class HitCounter implements ActionListener, MouseListener {
 	
 	private int pBTotalHits = 0;
 	private int focusedPaneHits = 0;
+	private int currentSplit = 0;
 	
-	// Public Class Constructor
+	/****************************
+	 * Public Class Constructor *
+	 ****************************/
+	
 	public HitCounter() {
 
 		// Menu setup
 		menuBar = new JMenuBar();
 		fileMenu = new JMenu("File");
+		editMenu = new JMenu("Edit");
 		
 		menuBar.add(fileMenu);
+		menuBar.add(editMenu);
 		
 		// Create MenuItems and handle them.
 		saveMenuItem = new JMenuItem("Save...");
 		saveMenuItem.addActionListener(this);
 		
 		fileMenu.add(saveMenuItem);
+		
+		incHitMenuItem = new JMenuItem("Add Hit");
+		incHitMenuItem.addActionListener(this);
+		incHitMenuItem.setAccelerator(KeyStroke.getKeyStroke('h'));
+		
+		decHitMenuItem = new JMenuItem("Remove Hit");
+		decHitMenuItem.addActionListener(this);
+		decHitMenuItem.setAccelerator(KeyStroke.getKeyStroke('u'));
+
+		nextSplitMenuItem = new JMenuItem("Next Split");
+		nextSplitMenuItem.addActionListener(this);
+		nextSplitMenuItem.setAccelerator(KeyStroke.getKeyStroke('n'));
+
+		editMenu.add(incHitMenuItem);
+		editMenu.add(decHitMenuItem);
+		editMenu.add(nextSplitMenuItem);
 		
 		//
 		frame = new JFrame();
@@ -167,12 +205,14 @@ public class HitCounter implements ActionListener, MouseListener {
 		splitsPanel.setOpaque(false);
 		splitsPanel.setLayout(createSplitsGroupLayout(splitsPanel));
 		
-		int splitPanelWidth = 150 + 100 + 100 + 100 + 10*4;
-		int splitPanelHeight = 10 + (20 + 2)*(splitNames.size() + 12) + 30 + 15*2 + 10;
+		int splitPanelWidth = splitWidth + hitWidth + diffWidth + pbWidth + 10*5;
+		int splitPanelHeight = (27*splitNames.size());
 		setPanelDimensions(splitsPanel, new Dimension(splitPanelWidth, splitPanelHeight));
 
+		System.out.println("Split #: " + String.valueOf(splitNames.size()));
+		
 		// Set ScrollPane
-		scrollPane.setPreferredSize(new Dimension(splitPanelWidth, 700));
+		scrollPane.setPreferredSize(new Dimension(splitPanelWidth, 400));
 		scrollPane.setViewportView(splitsPanel);
 		scrollPane.getViewport().setOpaque(false);
 		scrollPane.setOpaque(false);
@@ -189,7 +229,20 @@ public class HitCounter implements ActionListener, MouseListener {
 		frame.setVisible(true);
 	}
 	
-	// Load ZOoT Splits
+	/**********************
+	 * Callback Functions *
+	 **********************/
+	
+	public interface Callback {
+		void nextsplitcallback(int pos);
+		void highlightcallback();
+	};
+
+	
+	/****************************
+	 * Load Default ZOOT Splits *
+	 ****************************/
+	
 	private void loadZOOTSplits() {
 		
 		splitNames.add("Ghoma");
@@ -240,10 +293,20 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	/******************************************
+	 * Functions to create UI variable arrays *
+	 ******************************************/
+	
 	//
 	private void createSplitTextPanes(ArrayList<String> splits) {
 		
+		Color splitColor = new Color(rgbHLBlue);
+		
 		for (int i = 0; i < splits.size(); i++) {
+			
+			if (i > 0) {
+				splitColor = Color.white;
+			}
 			
 			// Create Alignments
 			SimpleAttributeSet left = new SimpleAttributeSet();
@@ -255,8 +318,8 @@ public class HitCounter implements ActionListener, MouseListener {
 			// Split Name
 			JTextPane splitNameTextPane = new JTextPane();
 			
-			setJTextPaneDimensions(splitNameTextPane, 100, 150, 200, 15);
-			setTextPaneAttributes(left, splitNameTextPane, splits.get(i), true, false, Color.white);
+			setJTextPaneDimensions(splitNameTextPane, 100, splitWidth, splitWidth, 15);
+			setTextPaneAttributes(left, splitNameTextPane, splits.get(i), true, false, splitColor);
 			splitNameTextPane.addMouseListener(this);
 			splitNameTextPane.setName(splits.get(i));
 
@@ -276,12 +339,13 @@ public class HitCounter implements ActionListener, MouseListener {
 				}
 			    
 				public void focusLost(FocusEvent e) {
+					parseTextPaneInput();
 					updateHitDifference((JTextPane) e.getSource());
 			    }
 			});
 			
-			setJTextPaneDimensions(hitCountTextPane, 40, 40, 40, 15);
-			setTextPaneAttributes(center, hitCountTextPane, "0", true, false, Color.white);
+			setJTextPaneDimensions(hitCountTextPane, hitWidth, hitWidth, hitWidth, 15);
+			setTextPaneAttributes(center, hitCountTextPane, "0", true, false, splitColor);
 
 			splitCurrentHitsArrayList.add(hitCountTextPane);
 			
@@ -293,8 +357,8 @@ public class HitCounter implements ActionListener, MouseListener {
 
 			String hitDifference = getHitDifference("0", pBSplitArrayList.get(i));
 
-			setJTextPaneDimensions(hitDifferenceTextPane, 40, 40, 40, 15);
-			setTextPaneAttributes(center, hitDifferenceTextPane, hitDifference, false, false, Color.white);
+			setJTextPaneDimensions(hitDifferenceTextPane, diffWidth, diffWidth, diffWidth, 15);
+			setTextPaneAttributes(center, hitDifferenceTextPane, hitDifference, false, false, splitColor);
 			
 			splitHitDifferenceArrayList.add(hitDifferenceTextPane);
 
@@ -306,8 +370,8 @@ public class HitCounter implements ActionListener, MouseListener {
 
 			String pBText = pBSplitArrayList.get(i) + "(" + pBCumulativeArrayList.get(i) + ")";
 			
-			setJTextPaneDimensions(pBTextPane, 60, 60, 60, 15);
-			setTextPaneAttributes(center, pBTextPane, pBText, false, false, Color.white);
+			setJTextPaneDimensions(pBTextPane, pbWidth, pbWidth, pbWidth, 15);
+			setTextPaneAttributes(center, pBTextPane, pBText, false, false, splitColor);
 
 			pBHitsArrayList.add(pBTextPane);
 		}
@@ -336,30 +400,35 @@ public class HitCounter implements ActionListener, MouseListener {
 		StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
 		
 		//
-		setJTextPaneDimensions(splitNameHeader, 100, 100, 100, 20);
-		setJTextPaneDimensions(currentHitsHeader, 100, 100, 100, 20);
-		setJTextPaneDimensions(hitDifferenceHeader, 100, 100, 100, 20);
-		setJTextPaneDimensions(pBHitsHeader, 100, 100, 100, 20);
+		setJTextPaneDimensions(splitNameHeader, 100, splitWidth, splitWidth, 20);
+		setJTextPaneDimensions(currentHitsHeader, hitWidth, hitWidth, hitWidth, 20);
+		setJTextPaneDimensions(hitDifferenceHeader, diffWidth, diffWidth, diffWidth, 20);
+		setJTextPaneDimensions(pBHitsHeader, pbWidth, pbWidth, pbWidth, 20);
 
-		setJTextPaneDimensions(totalTextPane, 100, 150, 200, 20);
-		setJTextPaneDimensions(totalHitsTextPane, 40, 40, 40, 20);
-		setJTextPaneDimensions(totalDifferenceTextPane, 40, 40, 40, 20);
-		setJTextPaneDimensions(totalPBHitsTextPane, 60, 60, 60, 20);
+		setJTextPaneDimensions(totalTextPane, 100, splitWidth, splitWidth, 20);
+		setJTextPaneDimensions(totalHitsTextPane, hitWidth, hitWidth, hitWidth, 20);
+		setJTextPaneDimensions(totalDifferenceTextPane, diffWidth, diffWidth, diffWidth, 20);
+		setJTextPaneDimensions(totalPBHitsTextPane, pbWidth, pbWidth, pbWidth, 20);
 
 		//
-		setTextPaneAttributes(center, splitNameHeader, "Splits", false, true, Color.white);
-		setTextPaneAttributes(center, currentHitsHeader, "Current", false, true, Color.white);
+		setTextPaneAttributes(left, splitNameHeader, "Splits", false, true, Color.white);
+		setTextPaneAttributes(center, currentHitsHeader, "Now", false, true, Color.white);
 		setTextPaneAttributes(center, hitDifferenceHeader, "Diff", false, true, Color.white);
 		setTextPaneAttributes(center, pBHitsHeader, "PB", false, true, Color.white);
 
-		setTextPaneAttributes(left, totalTextPane, "Total", false, true, Color.white);
-		setTextPaneAttributes(center, totalHitsTextPane, totalHitsString, false, true, Color.white);
-		setTextPaneAttributes(center, totalDifferenceTextPane, totalDiffString, false, true, Color.white);
-		setTextPaneAttributes(center, totalPBHitsTextPane, pBString, false, true, Color.white);
+		setTextPaneAttributes(left, totalTextPane, "Total", false, true, new Color(rgbHLGold));
+		setTextPaneAttributes(center, totalHitsTextPane, totalHitsString, false, true, new Color(rgbHLGold));
+		setTextPaneAttributes(center, totalDifferenceTextPane, totalDiffString, false, true, new Color(rgbHLGold));
+		setTextPaneAttributes(center, totalPBHitsTextPane, pBString, false, true, new Color(rgbHLGold));
 
 		return;
 	}
 	
+	/************************************
+	 * Swing Component Helper Functions *
+	 ************************************/
+	
+	//
 	private void setTextPaneAttributes(SimpleAttributeSet alignment, JTextPane pane, String paneText,
 										boolean editable, boolean bold, Color foregroundColor) {
 		
@@ -379,6 +448,17 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	//
+	private void setJTextPaneDimensions(JTextPane textPane, int minwidth, int prefwidth, int maxwidth, int height) {
+		
+		textPane.setMinimumSize(new Dimension(minwidth, height));
+		textPane.setPreferredSize(new Dimension(prefwidth, height));
+		textPane.setMaximumSize(new Dimension(maxwidth, height));
+		
+		return;
+	}
+	
+	//
 	private void setPanelDimensions(JPanel panel, Dimension dim) {
 		
 		panel.setMinimumSize(dim);
@@ -388,6 +468,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	//
 	private void updateHitDifference(JTextPane sourceHitPane) {
 		
 		if (Integer.parseInt(sourceHitPane.getText()) == focusedPaneHits) {
@@ -398,23 +479,32 @@ public class HitCounter implements ActionListener, MouseListener {
 		SimpleAttributeSet center = new SimpleAttributeSet();
 		StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
 		
+		SimpleAttributeSet left = new SimpleAttributeSet();
+		StyleConstants.setAlignment(left, StyleConstants.ALIGN_LEFT);
+		
 		//
 		String sourceName = sourceHitPane.getName();
 		
 		JTextPane diffPane = getDiffPane(sourceName);
 		
 		String pbString = "";
+		JTextPane splitPane = null;
+		JTextPane pbPane = null;
+		
 		
 		for (int i = 0; i < pBHitsArrayList.size(); i++) {
 			
 			if (pBHitsArrayList.get(i).getName().equals(sourceName)) {
+				splitPane = splitNameTextArrayList.get(i);
+				pbPane = pBHitsArrayList.get(i);
 				pbString = pBSplitArrayList.get(i);
 			}
 		}
 		
 		String changedDiffString = getHitDifference(sourceHitPane.getText(), pbString);
-		
-		setTextPaneAttributes(center, diffPane, changedDiffString, false, false, Color.white);
+		int nowHits = Integer.parseInt(sourceHitPane.getText());
+		int pbHits = Integer.parseInt(pbString);
+		Color splitColor = new Color(determineHighlightColor(nowHits, pbHits));
 		
 		int currentTotalHits = 0;
 		for (int i = 0; i < splitCurrentHitsArrayList.size(); i++) {
@@ -426,17 +516,33 @@ public class HitCounter implements ActionListener, MouseListener {
 			pbTotalHits = pbTotalHits + Integer.parseInt(pBSplitArrayList.get(i));
 		}
 		
-		setTextPaneAttributes(center, totalHitsTextPane, String.valueOf(currentTotalHits), false, true, Color.white);
+		// Make changes to UI
+		
+		Color pbcolor = new Color(determineHighlightColor(currentTotalHits, pbTotalHits));
+		
+		setTextPaneAttributes(center, totalHitsTextPane, String.valueOf(currentTotalHits), false, true, pbcolor);
 		
 		String changedTotalDiffString = getHitDifference(String.valueOf(currentTotalHits), String.valueOf(pbTotalHits));
 		
-		setTextPaneAttributes(center, totalDifferenceTextPane, changedTotalDiffString, false, true, Color.white);
-				
-		sourceHitPane.setCaretPosition(0);
+		setTextPaneAttributes(center, totalDifferenceTextPane, changedTotalDiffString, false, true, pbcolor);
+		
+		if (!totalTextPane.getForeground().equals(pbcolor)) {
+			setTextPaneAttributes(left, totalTextPane, totalTextPane.getText(), false, true, pbcolor);
+			setTextPaneAttributes(center, totalPBHitsTextPane, totalPBHitsTextPane.getText(), false, true, pbcolor);		
+		}		
+		
+		setTextPaneAttributes(center, diffPane, changedDiffString, false, false, splitColor);
+		
+		if (!splitPane.getForeground().equals(splitColor)) {
+			setTextPaneAttributes(left, splitPane, splitPane.getText(), true, false, splitColor);
+			setTextPaneAttributes(center, sourceHitPane, sourceHitPane.getText(), true, false, splitColor);
+			setTextPaneAttributes(center, pbPane, pbPane.getText(), false, false, splitColor);
+		}
 		
 		return;
 	}
 	
+	//
 	private JTextPane getDiffPane(String name) {
 		
 		for (int i = 0; i < splitHitDifferenceArrayList.size(); i++) {
@@ -449,6 +555,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		return null;
 	}
 	
+	//
 	private String getHitDifference(String hits, String splitPB) {
 		
 		int diff = Integer.parseInt(hits) - Integer.parseInt(splitPB);
@@ -456,6 +563,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		return String.valueOf(diff);
 	}
 	
+	//
 	private void makePBCumulativeArrayList() {
 		
 		int cumulativePB = 0;
@@ -472,6 +580,16 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	//
+	private void parseTextPaneInput() {
+		// TODO check if user inputs invalid string
+	}
+	
+	/*****************************
+	 * Layout Creation Functions *
+	 *****************************/
+	
+	//
 	private GroupLayout createSplitsGroupLayout(JPanel panel) {
 		
 		GroupLayout layout = new GroupLayout(panel);
@@ -489,102 +607,50 @@ public class HitCounter implements ActionListener, MouseListener {
 		//FIRST COLUMN
 		ParallelGroup firstColumnParallelGroup = layout.createParallelGroup(Alignment.CENTER);
 		
-		/*
-		 * Removing the headers from this layout
-		firstColumnParallelGroup.addComponent(splitNameHeader);
-		*/
-		
 		// Iterate over the ArrayList to create horizontal layout groupings
 		for (int i = 0; i < splitNameTextArrayList.size(); i++) {
 							
 			firstColumnParallelGroup.addComponent(splitNameTextArrayList.get(i));			
 		}
 		
-		/*
-		 * Removing the totals from this layout
-		firstColumnParallelGroup.addComponent(totalTextPane);
-		*/
-		
 		rowSequentialGroup.addGroup(firstColumnParallelGroup);
 		rowSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 10, 15);
 		
 		// SECOND COLUMN
 		ParallelGroup secondColumnParallelGroup = layout.createParallelGroup(Alignment.CENTER);
-		
-		/*
-		 * Removing the header from this layout
-		secondColumnParallelGroup.addComponent(currentHitsHeader);
-		 */
-		
+
 		// Iterate over the ArrayList to create next parallel grouping
 		for (int i = 0; i < splitCurrentHitsArrayList.size(); i++) {
 							
 			secondColumnParallelGroup.addComponent(splitCurrentHitsArrayList.get(i));			
 		}
-		
-		/*
-		 * Removing the totals from this layout
-		secondColumnParallelGroup.addComponent(totalHitsTextPane);
-		*/
-		
+
 		rowSequentialGroup.addGroup(secondColumnParallelGroup);
 		rowSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 10, 15);
 		
 		// THIRD COLUMN
 		ParallelGroup thirdColumnParallelGroup = layout.createParallelGroup(Alignment.CENTER);
 		
-		/*
-		 * Removing the header from this layout
-		thirdColumnParallelGroup.addComponent(hitDifferenceHeader);
-		 */
 		// Iterate over the ArrayList to create next parallel grouping
 		for (int i = 0; i < splitHitDifferenceArrayList.size(); i++) {
 							
 			thirdColumnParallelGroup.addComponent(splitHitDifferenceArrayList.get(i));			
 		}
-		
-		/*
-		 * Removing the totals from this layout
-		thirdColumnParallelGroup.addComponent(totalDifferenceTextPane);
-		*/
-		
+
 		rowSequentialGroup.addGroup(thirdColumnParallelGroup);
 		rowSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 10, 15);
 		
 		// FOURTH COLUMN
 		ParallelGroup fourthColumnParallelGroup = layout.createParallelGroup(Alignment.CENTER);
-		
-		/*
-		 * Removing the header from this layout
-		fourthColumnParallelGroup.addComponent(pBHitsHeader);
-		 */
-		
+
 		// Iterate over the ArrayList to create next parallel grouping
 		for (int i = 0; i < pBHitsArrayList.size(); i++) {
 							
 			fourthColumnParallelGroup.addComponent(pBHitsArrayList.get(i));			
 		}
-		
-		/*
-		 * Removing the totals from this layout
-		fourthColumnParallelGroup.addComponent(totalPBHitsTextPane);
-		*/
-		
-		rowSequentialGroup.addGroup(fourthColumnParallelGroup);
-		rowSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 10, 15);
-		
-		/* 
-		 * Add SetPBButton Layout Group and rowSequentialGroup
-		 * to TopLevelParallelGroup
-		 *	
-		SequentialGroup buttonSequentialGroup = layout.createSequentialGroup();
-		
-		buttonSequentialGroup.addComponent(resetRunButton);
-		buttonSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, 30, 50);
-		buttonSequentialGroup.addComponent(setPBButton);
 
-		topLevelParallelGroup.addGroup(buttonSequentialGroup);
-		*/
+		rowSequentialGroup.addGroup(fourthColumnParallelGroup);
+		
 		topLevelParallelGroup.addGroup(rowSequentialGroup);
 		
 		// Finalize Horizontal Layout
@@ -594,28 +660,6 @@ public class HitCounter implements ActionListener, MouseListener {
 		 *  Vertical Alignment
 		 */
 		SequentialGroup columnSequentialGroup = layout.createSequentialGroup();
-		
-		/*
-		 * Removing the buttons and header from this layout and putting them in a higher level layout.
-		ParallelGroup buttonParallelGroup = layout.createParallelGroup(Alignment.CENTER);
-		
-		buttonParallelGroup.addComponent(resetRunButton);
-		buttonParallelGroup.addComponent(setPBButton);
-		
-		columnSequentialGroup.addGroup(buttonParallelGroup);
-		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 30, 30);
-
-		// Set Layout for Header
-		ParallelGroup headerParallelGroup = layout.createParallelGroup(Alignment.CENTER);
-		
-		headerParallelGroup.addComponent(splitNameHeader);
-		headerParallelGroup.addComponent(currentHitsHeader);
-		headerParallelGroup.addComponent(hitDifferenceHeader);
-		headerParallelGroup.addComponent(pBHitsHeader);
-		
-		columnSequentialGroup.addGroup(headerParallelGroup);
-		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 15, 15);
-		*/
 		
 		// Iterate over the ArrayLists to create vertical layout groupings
 		for (int i = 0; i < splitNameTextArrayList.size(); i++) {
@@ -631,27 +675,13 @@ public class HitCounter implements ActionListener, MouseListener {
 			columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 2, 2);
 		}
 		
-		/*
-		 * Removing the totals from this layout
-		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 20, 20);
-
-		// Set Layout for Total row
-		ParallelGroup totalParallelGroup = layout.createParallelGroup(Alignment.CENTER);
-		
-		totalParallelGroup.addComponent(totalTextPane);
-		totalParallelGroup.addComponent(totalHitsTextPane);
-		totalParallelGroup.addComponent(totalDifferenceTextPane);
-		totalParallelGroup.addComponent(totalPBHitsTextPane);
-		
-		columnSequentialGroup.addGroup(totalParallelGroup);
-		 */
-		
 		// Finalize Vertical Layout
 		layout.setVerticalGroup(columnSequentialGroup);
 		
 		return layout;
 	}
 	
+	//
 	private GroupLayout createTopLeveGroupLayout(JPanel panel) {
 		
 		GroupLayout layout = new GroupLayout(panel);
@@ -744,16 +774,13 @@ public class HitCounter implements ActionListener, MouseListener {
 		
 		return layout;
 	}
-	
-	private void setJTextPaneDimensions(JTextPane textPane, int minwidth, int prefwidth, int maxwidth, int height) {
-		
-		textPane.setMinimumSize(new Dimension(minwidth, height));
-		textPane.setPreferredSize(new Dimension(prefwidth, height));
-		textPane.setMaximumSize(new Dimension(maxwidth, height));
-		
-		return;
-	}
-	
+
+	/******************************************
+	 *  Button and Menu Item action functions *
+	 *  and helper functions				  *
+	 ******************************************/
+
+	//
 	private void resetRun() {
 		
 		SimpleAttributeSet center = new SimpleAttributeSet();
@@ -773,11 +800,13 @@ public class HitCounter implements ActionListener, MouseListener {
 			updateHitDifference(splitCurrentHitsArrayList.get(i));
 		}
 		
-		highlightRow(splitNameTextArrayList.get(0));
+		currentSplit = 0;
+		highlightRow(splitNameTextArrayList.get(0), null);
 		
 		return;
 	}
 	
+	//
 	private void setPB() {
 		
 		SimpleAttributeSet center = new SimpleAttributeSet();
@@ -809,32 +838,182 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
-	private void highlightRow(JComponent source) {
+	//
+	private void incrementCurrentSplitHit() {
 		
-		for (int i = 0; i < splitsPanel.getComponentCount(); i++) {
+		JTextPane currentHitPane = splitCurrentHitsArrayList.get(currentSplit);
+		String updatedHitString = String.valueOf(Integer.parseInt(currentHitPane.getText()) + 1);
+		currentHitPane.setText(updatedHitString);
+				
+		focusedPaneHits = -1;
+		updateHitDifference(splitCurrentHitsArrayList.get(currentSplit));
+				
+		return;
+	}
+	
+	//
+	private void decrementCurrentSplitHit() {
+		
+		JTextPane currentHitPane = splitCurrentHitsArrayList.get(currentSplit);
+		int updatedHitInt = Integer.parseInt(currentHitPane.getText()) - 1;
+		
+		if (updatedHitInt < 0) {
+			updatedHitInt = 0;
+		}
+		
+		String updatedHitString = String.valueOf(updatedHitInt);
+		currentHitPane.setText(updatedHitString);
+		
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 
-			if (splitsPanel.getComponent(i).getName() == source.getName()) {
-				JTextPane pane = (JTextPane) splitsPanel.getComponent(i);
+		focusedPaneHits = -1;
+		updateHitDifference(splitCurrentHitsArrayList.get(currentSplit));
+		
+		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-				pane.setOpaque(true);
-				pane.setBackground(new Color(rgbHLBlue));
-				pane.setForeground(Color.WHITE);
+		return;
+	}
+	
+	//
+	private void goToNextSplit(Callback callback, int scrollpos) {
+		
+		Callback highlightCallback = new Callback() {
+			public void nextsplitcallback(int pos) {
+				return;
 			}
-			else if (splitsPanel.getComponent(i).getName() != null) {
-				JTextPane pane = (JTextPane) splitsPanel.getComponent(i);
+			
+			public void highlightcallback() {
+				callback.nextsplitcallback(scrollpos);
+				return;
+			}
+		};
+		
+		currentSplit = currentSplit + 1;
 
-				pane.setBackground(Color.WHITE);
-				pane.setForeground(Color.BLACK);
-				pane.setOpaque(false);
+		if (currentSplit < splitNameTextArrayList.size()) {
+
+			highlightRow(splitNameTextArrayList.get(currentSplit), highlightCallback);
+		}
+		else {
+			currentSplit = splitNameTextArrayList.size() - 1;
+		}
+		
+		return;
+	}
+	
+	//
+	private void findCurrentSplit(JComponent source) {
+		
+		for (int i = 0; i < splitNameTextArrayList.size(); i++) {
+
+			if (splitNameTextArrayList.get(i).getName() == source.getName()) {
+				currentSplit = i;
+				break;
 			}
 		}
 		
 		return;
 	}
 	
-	/*
-	 * Save and Load Functions
-	 */
+	//
+	private void highlightRow(JComponent source, Callback callback) {
+		
+		// Create Alignments
+		SimpleAttributeSet left = new SimpleAttributeSet();
+		StyleConstants.setAlignment(left, StyleConstants.ALIGN_LEFT);
+		
+		SimpleAttributeSet center = new SimpleAttributeSet();
+		StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
+		
+		boolean atCurrentSplit = false;
+		int currentSplitpos = -1;
+				
+		for (int i = splitNameTextArrayList.size() - 1; i >= 0; i--) {
+
+			JTextPane splitPane = splitNameTextArrayList.get(i);
+			JTextPane hitPane = splitCurrentHitsArrayList.get(i);
+			JTextPane diffPane = splitHitDifferenceArrayList.get(i);
+			JTextPane pbPane = pBHitsArrayList.get(i);
+			
+			if (splitNameTextArrayList.get(i).getName() == source.getName()) {
+				
+				currentSplitpos = i;
+				
+				atCurrentSplit = true;
+			}
+			else if (atCurrentSplit) {
+				
+				int hits = Integer.parseInt(hitPane.getText());
+				int pbhits = Integer.parseInt(pBSplitArrayList.get(i));
+				Color splitcolor = new Color(determineHighlightColor(hits, pbhits));
+
+				if (!splitPane.getForeground().equals(splitcolor)) {
+					setTextPaneAttributes(left, splitPane, splitPane.getText(), true, false, splitcolor);
+					setTextPaneAttributes(center, hitPane, hitPane.getText(), true, false, splitcolor);
+					setTextPaneAttributes(center, diffPane, diffPane.getText(), false, false, splitcolor);
+					setTextPaneAttributes(center, pbPane, pbPane.getText(), false, false, splitcolor);
+				}
+			}
+			else {
+				
+				if (!splitPane.getForeground().equals(Color.white)) {
+					setTextPaneAttributes(left, splitPane, splitPane.getText(), true, false, Color.white);
+					setTextPaneAttributes(center, hitPane, hitPane.getText(), true, false, Color.white);
+					setTextPaneAttributes(center, diffPane, diffPane.getText(), false, false, Color.white);
+					setTextPaneAttributes(center, pbPane, pbPane.getText(), false, false, Color.white);
+				}
+				
+			}
+		}
+		
+		// Do this here to keep current split on the screen
+		Color splitcolor = new Color(rgbHLBlue);
+
+		JTextPane currentsplitPane = splitNameTextArrayList.get(currentSplitpos);
+		JTextPane currenthitPane = splitCurrentHitsArrayList.get(currentSplitpos);
+		JTextPane currentdiffPane = splitHitDifferenceArrayList.get(currentSplitpos);
+		JTextPane currentpbPane = pBHitsArrayList.get(currentSplitpos);
+		
+		if (!currentsplitPane.getForeground().equals(splitcolor)) {
+			setTextPaneAttributes(left, currentsplitPane, currentsplitPane.getText(), true, false, splitcolor);
+			setTextPaneAttributes(center, currenthitPane, currenthitPane.getText(), true, false, splitcolor);
+			setTextPaneAttributes(center, currentdiffPane, currentdiffPane.getText(), false, false, splitcolor);
+			setTextPaneAttributes(center, currentpbPane, currentpbPane.getText(), false, false, splitcolor);
+		}
+		
+		if (currentSplitpos < splitNameTextArrayList.size() - 1) {
+			JTextPane nextsplitPane = splitNameTextArrayList.get(currentSplitpos + 1);
+			setTextPaneAttributes(left, nextsplitPane, nextsplitPane.getText(), true, false, Color.white);
+		}
+
+		// Callback
+		if (callback != null) {
+			callback.highlightcallback();
+		}
+		
+		return;
+	}
+	
+	//
+	private int determineHighlightColor(int nowhits, int pbhits) {
+		
+		if (nowhits == 0) {
+			return rgbHLGold;
+		}
+		else if (nowhits <= pbhits) {
+			return rgbHLGreen;
+		}
+		else {
+			return rgbHLRed;
+		}
+		
+	}
+	
+	/***************************
+	 * Save and Load Functions *
+	 ***************************/
+	
+	//
 	private void loadProgram() {
 		
 		System.out.println("Load savefile: " + userSaveFilePathString);
@@ -857,6 +1036,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	//
 	private void saveProgram() {
 		
 		File userSave = new File(userSaveFilePathString);
@@ -895,18 +1075,48 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
-	// Main
+	/************
+	 *** Main ***
+	 ************/
+	
 	public static void main(String[] args) {
 
 		new HitCounter();
 	}
 
-	// Overridden Functions
+	/************************
+	 * Overridden Functions *
+	 ************************/
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 
 		if (e.getSource() == saveMenuItem) {
 			saveProgram();
+		}
+		else if (e.getSource() == incHitMenuItem) {
+			incrementCurrentSplitHit();
+		}
+		else if (e.getSource() == decHitMenuItem) {
+			decrementCurrentSplitHit();
+		}
+		else if (e.getSource() == nextSplitMenuItem) {
+			BoundedRangeModel scrollmodel = scrollPane.getVerticalScrollBar().getModel();
+			int scrollpos = scrollmodel.getValue();
+
+			Callback fixViewCallback = new Callback() {
+				public void nextsplitcallback(int pos) {
+
+					scrollPane.getViewport().setViewPosition(new Point(0, pos));
+					return;
+				}
+				
+				public void highlightcallback() {
+					return;
+				}
+			};
+
+			goToNextSplit(fixViewCallback, scrollpos);
 		}
 		else if (e.getSource() == resetRunButton) {
 			resetRun();
@@ -914,19 +1124,30 @@ public class HitCounter implements ActionListener, MouseListener {
 		else if (e.getSource() == setPBButton) {
 			setPB();
 		}
+		
+		return;
 	}
+	
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-		JComponent source = (JComponent) e.getSource();
 		
-		System.out.println("X: " + String.valueOf(e.getX()));
-		System.out.println("Y: " + String.valueOf(e.getY()));
-		
-		System.out.println("Name: " + String.valueOf(source.getName()));
-		
-		highlightRow(source);
+		if (e.getSource() instanceof JComponent) {
+			
+			Runnable runnable = new Runnable() {
+				
+				@Override
+				public void run() {
+					JComponent source = (JComponent) e.getSource();
+
+					findCurrentSplit(source);
+					highlightRow(source, null);
+				}
+			};
+			
+			Thread thread = new Thread(runnable);
+			thread.start();
+		}
 	}
 
 	@Override
