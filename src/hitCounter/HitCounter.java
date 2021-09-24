@@ -30,6 +30,8 @@ import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 
+import sun.jvm.hotspot.debugger.posix.elf.ELFSectionHeader;
+
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -83,16 +85,16 @@ public class HitCounter implements ActionListener, MouseListener {
 	private JTextPane hitDifferenceHeader;
 	private JTextPane pBHitsHeader;
 	
-	private ArrayList<SplitRow> splitRowArrayList;
+	private ArrayList<ArrayList<SplitRow>> splitRowArrayList;
 	
 	private JTextPane totalTextPane;
 	private JTextPane totalHitsTextPane;
 	private JTextPane totalDifferenceTextPane;
 	private JTextPane totalPBHitsTextPane;
 	
-	private ArrayList<String> splitNames;
-	private ArrayList<String> pBSplitArrayList;
-	private ArrayList<String> pBCumulativeArrayList;
+	private ArrayList<ArrayList<String>> splitNames;
+	private ArrayList<ArrayList<String>> pBSplitArrayList;
+	private ArrayList<ArrayList<String>> pBCumulativeArrayList;
 	
 	private int pBTotalHits = 0;
 	private int currentSplit = 0;
@@ -168,20 +170,22 @@ public class HitCounter implements ActionListener, MouseListener {
 		setPBButton.setPreferredSize(new Dimension(100, 20));
 		setPBButton.setMaximumSize(new Dimension(100, 20));
 		
-		splitRowArrayList = new ArrayList<SplitRow>();
+		splitRowArrayList = new ArrayList<ArrayList<SplitRow>>();
 		
-		splitNames = new ArrayList<String>();
-		pBSplitArrayList = new ArrayList<String>();
-		pBCumulativeArrayList = new ArrayList<String>();
+		splitNames = new ArrayList<ArrayList<String>>();
+		pBSplitArrayList = new ArrayList<ArrayList<String>>();
+		pBCumulativeArrayList = new ArrayList<ArrayList<String>>();
 		
-		loadZOOTSplits();
+//		loadZOOTSplits();
 		loadProgram();
 		
 		if (!hasSavedPB) {
 			
+			pBSplitArrayList.add(new ArrayList<String>());
+			
 			for (int i = 0; i < splitNames.size(); i++) {
 				
-				pBSplitArrayList.add("0");
+				pBSplitArrayList.get(0).add("0");
 			}
 		}
 		
@@ -383,50 +387,50 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void loadZOOTSplits() {
 		
-		splitNames.add("Ghoma");
-		splitNames.add("Zeldo");
-		splitNames.add("Saria");
-		splitNames.add("Lizolfos 1");
-		splitNames.add("Lizolfos 2");
+		splitNames.get(0).add("Ghoma");
+		splitNames.get(0).add("Zeldo");
+		splitNames.get(0).add("Saria");
+		splitNames.get(0).add("Lizolfos 1");
+		splitNames.get(0).add("Lizolfos 2");
 
-		splitNames.add("Dodongo");
-		splitNames.add("Boomerang");
-		splitNames.add("Big Octo");
-		splitNames.add("Baranade");
-		splitNames.add("Stalfos 1");
+		splitNames.get(0).add("Dodongo");
+		splitNames.get(0).add("Boomerang");
+		splitNames.get(0).add("Big Octo");
+		splitNames.get(0).add("Baranade");
+		splitNames.get(0).add("Stalfos 1");
 
-		splitNames.add("Stalfos 2");
-		splitNames.add("Phantom Ganon");
-		splitNames.add("Nut Sack 1");
-		splitNames.add("Vulvagina");
-		splitNames.add("Lens of Truth");
+		splitNames.get(0).add("Stalfos 2");
+		splitNames.get(0).add("Phantom Ganon");
+		splitNames.get(0).add("Nut Sack 1");
+		splitNames.get(0).add("Vulvagina");
+		splitNames.get(0).add("Lens of Truth");
 
-		splitNames.add("Iron Boots");
-		splitNames.add("Dark Link");
-		splitNames.add("Morpha");
-		splitNames.add("Hover Boots");
-		splitNames.add("Bongos");
+		splitNames.get(0).add("Iron Boots");
+		splitNames.get(0).add("Dark Link");
+		splitNames.get(0).add("Morpha");
+		splitNames.get(0).add("Hover Boots");
+		splitNames.get(0).add("Bongos");
 
-		splitNames.add("Gerudo Card");
-		splitNames.add("Requiem");
-		splitNames.add("Silver Gauntlets");
-		splitNames.add("Nabooru");
-		splitNames.add("Twinrova");
+		splitNames.get(0).add("Gerudo Card");
+		splitNames.get(0).add("Requiem");
+		splitNames.get(0).add("Silver Gauntlets");
+		splitNames.get(0).add("Nabooru");
+		splitNames.get(0).add("Twinrova");
 
-		splitNames.add("Forest Trial");
-		splitNames.add("Water Trial");
-		splitNames.add("Shadow Trial");
-		splitNames.add("Fire Trial");
-		splitNames.add("Light Trial");
+		splitNames.get(0).add("Forest Trial");
+		splitNames.get(0).add("Water Trial");
+		splitNames.get(0).add("Shadow Trial");
+		splitNames.get(0).add("Fire Trial");
+		splitNames.get(0).add("Light Trial");
 
-		splitNames.add("Spirit Trial");
-		splitNames.add("Ganon Dinalfos");
-		splitNames.add("Ganon Stalfos");
-		splitNames.add("B&W Knuckles");
-		splitNames.add("Ganondorf");
+		splitNames.get(0).add("Spirit Trial");
+		splitNames.get(0).add("Ganon Dinalfos");
+		splitNames.get(0).add("Ganon Stalfos");
+		splitNames.get(0).add("B&W Knuckles");
+		splitNames.get(0).add("Ganondorf");
 
-		splitNames.add("Collapse");
-		splitNames.add("Ganon");
+		splitNames.get(0).add("Collapse");
+		splitNames.get(0).add("Ganon");
 
 		return;
 	}
@@ -887,9 +891,62 @@ public class HitCounter implements ActionListener, MouseListener {
 		try (BufferedReader br = new BufferedReader(new FileReader(saveFile))) {
 		    String line;
 		    
-		    while ((line = br.readLine()) != null) {
-		    	// process the line.
-		    	pBSplitArrayList.add(line);
+		    if((line = br.readLine()) != null) {
+		    	
+		    	if (line.equals("----------")) {
+					
+		    		splitNames.add(new ArrayList<String>());
+		    		pBSplitArrayList.add(new ArrayList<String>());
+		    		pBCumulativeArrayList.add(new ArrayList<String>());
+		    		
+		    		int readcounter = 0;
+		    		int splitcounter = 0;
+		    		while ((line = br.readLine()) != null) {
+				    	// process the line.
+		    			if (line.equals("")) {
+		    				
+		    				if (splitNames.get(splitcounter).size() != pBSplitArrayList.get(splitcounter).size()) {
+		    					System.out.println("Error in reading save file: Split # != pb #");
+		    					throw new RuntimeException();
+							}
+		    			}
+		    			else if (line.equals("----------")) {
+		    				
+		    				if (splitNames.get(splitcounter).size() != pBSplitArrayList.get(splitcounter).size()) {
+		    					System.out.println("Error in reading save file: Split # != pb #");
+		    					throw new RuntimeException();
+							}
+		    				
+							readcounter = 0;
+							splitcounter = splitcounter + 1;
+							
+				    		splitNames.add(new ArrayList<String>());
+				    		pBSplitArrayList.add(new ArrayList<String>());
+				    		pBCumulativeArrayList.add(new ArrayList<String>());
+						}
+		    			else if ((readcounter % 2) == 0) {
+							
+		    				splitNames.get(splitcounter).add(line);
+						}
+		    			else {
+		    				
+					    	pBSplitArrayList.get(splitcounter).add(line);
+		    			}
+				    }
+				}
+		    	else {
+		    		
+		    		splitNames.add(new ArrayList<String>());
+		    		pBSplitArrayList.add(new ArrayList<String>());
+		    		pBCumulativeArrayList.add(new ArrayList<String>());
+		    		
+		    		loadZOOTSplits();
+		    		
+				    while ((line = br.readLine()) != null) {
+				    	// process the line.
+				    	pBSplitArrayList.get(0).add(line);
+				    }
+		    	}
 		    }
 		}
 		catch (Exception e) {
@@ -923,9 +980,20 @@ public class HitCounter implements ActionListener, MouseListener {
  
 			// Writes text to a character-output stream
 			BufferedWriter bufferWriter = new BufferedWriter(saveWriter);
-			for (int i = 0; i < pBSplitArrayList.size(); i++) {
+			
+			for (int i = 0; i < splitRowArrayList.size(); i++) {
 
-				bufferWriter.write(pBSplitArrayList.get(i));
+				bufferWriter.write("----------");
+
+				for (int j = 0; j < splitRowArrayList.get(i).size(); j++) {
+					
+					bufferWriter.write(splitRowArrayList.get(i).get(j).getSplitName());
+					bufferWriter.newLine();
+					
+					bufferWriter.write(pBSplitArrayList.get(i));
+					bufferWriter.newLine();
+				}
+				
 				bufferWriter.newLine();
 			}
 			

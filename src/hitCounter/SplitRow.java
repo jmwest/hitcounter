@@ -330,6 +330,12 @@ public class SplitRow extends JPanel implements MouseListener {
 	 *******************************/
 	
 	//
+	public String getSplitName() {
+		
+		return splitNameString;
+	}
+	
+	//
 	public String getPB() {
 		
 		return pbHitString;
@@ -351,6 +357,7 @@ public class SplitRow extends JPanel implements MouseListener {
 		return splitHitsString;
 	}
 	
+	//
 	public String getHitsFromPane() {
 		
 		return splitCurrentHitsPane.getText();
