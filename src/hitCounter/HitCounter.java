@@ -58,7 +58,7 @@ public class HitCounter implements ActionListener, MouseListener {
      *****************************/
     
     private String userSaveFilePathString = System.getProperty("user.dir") + System.getProperty("file.separator")
-											+ "resources" + System.getProperty("file.separator") + "usersave.txt";
+											+ "resources" + System.getProperty("file.separator") + "MMusersave.txt";
 	
     private boolean hasSavedPB = true;
     
@@ -174,7 +174,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		pBSplitArrayList = new ArrayList<String>();
 		pBCumulativeArrayList = new ArrayList<String>();
 		
-		loadZOOTSplits();
+		loadMMSplits();
 		loadProgram();
 		
 		if (!hasSavedPB) {
@@ -427,6 +427,35 @@ public class HitCounter implements ActionListener, MouseListener {
 
 		splitNames.add("Collapse");
 		splitNames.add("Ganon");
+
+		return;
+	}
+
+	private void loadMMSplits() {
+		
+		splitNames.add("Ocarina of Time");
+		splitNames.add("Sonata");
+		splitNames.add("Lizard");
+		splitNames.add("Odalwa");
+		splitNames.add("Fire Arrow Wizrobe");
+
+		splitNames.add("Boss Key Wizrobe");
+		splitNames.add("Goht");
+		splitNames.add("Pirate's Fortress");
+		splitNames.add("Eggies");
+		splitNames.add("KKona Virus");
+		
+		splitNames.add("Froggie");
+		splitNames.add("Fishie");
+		splitNames.add("Bonezone");
+		splitNames.add("Iron Knuckle");
+		splitNames.add("Big Poe");
+
+		splitNames.add("Igos");
+		splitNames.add("Light Arrow");
+		splitNames.add("Gomez");
+		splitNames.add("Twinmald");
+		splitNames.add("Majora");
 
 		return;
 	}
