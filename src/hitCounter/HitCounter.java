@@ -808,7 +808,7 @@ public class HitCounter implements ActionListener, MouseListener {
 
 		for (int i = 0; i < splitRowArrayList.size(); i++) {
 			
-			pBSplitArrayList.add(splitRowArrayList.get(i).getPB());
+			pBSplitArrayList.add(splitRowArrayList.get(i).getHits());
 		}
 		
 		makePBCumulativeArrayList();
