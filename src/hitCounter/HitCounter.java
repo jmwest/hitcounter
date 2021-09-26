@@ -311,7 +311,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		int currentTotalHits = 0;
 		int pbTotalHits = Integer.parseInt(pbcumulativelist.get(pbcumulativelist.size() - 1));
 		
-		for (int i = 0; i < splitRowArrayList.size(); i++) {
+		for (int i = 0; i < splitrowarray.size(); i++) {
 			currentTotalHits = currentTotalHits + Integer.parseInt(splitrowarray.get(i).getHits());
 		}
 		
@@ -325,7 +325,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		setTextPaneAttributes(center, totalDifferenceTextPane, changedTotalDiffString, false, true, pbcolor);
 		
 		setTextPaneAttributes(left, totalTextPane, totalTextPane.getText(), false, true, pbcolor);
-		setTextPaneAttributes(center, totalPBHitsTextPane, totalPBHitsTextPane.getText(), false, true, pbcolor);	
+		setTextPaneAttributes(center, totalPBHitsTextPane, String.valueOf(pbTotalHits), false, true, pbcolor);	
 		
 		return;
 	}
@@ -724,6 +724,9 @@ public class HitCounter implements ActionListener, MouseListener {
 		System.out.println("Split #: " + String.valueOf(splitNames.get(currentTitle).size()));
 
 		splitsPanel.validate();
+		
+		updateHitDifferences(splitRowArrayList.get(currentTitle).get(currentSplits.get(currentTitle)), // -> Next Line
+							 splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle));
 		
 		return;
 	}
