@@ -519,20 +519,10 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void setUpSplitRows() {
 		
-		System.out.println("splitNames size: " + String.valueOf(splitNames.size()));
-		System.out.println("splitRowArrayList size: " + String.valueOf(splitRowArrayList.size()));
-		System.out.println("pBSplitArrayList size: " + String.valueOf(pBSplitArrayList.size()));
-		System.out.println("pBCumulativeArrayList size: " + String.valueOf(pBCumulativeArrayList.size()));
-		
 		for (int i = 0; i < splitNames.size(); i++) {
 			
 			splitRowArrayList.add(new ArrayList<SplitRow>());
 
-			System.out.println("splitNames.get(" + String.valueOf(i) + ") size: " + String.valueOf(splitNames.get(i).size()));
-			System.out.println("splitRowArrayList.get(" + String.valueOf(i) + ") size: " + String.valueOf(splitRowArrayList.get(i).size()));
-			System.out.println("pBSplitArrayList.get(" + String.valueOf(i) + ") size: " + String.valueOf(pBSplitArrayList.get(i).size()));
-			System.out.println("pBCumulativeArrayList.get(" + String.valueOf(i) + ") size: " + String.valueOf(pBCumulativeArrayList.get(i).size()));
-			
 			createSplitRows(splitNames.get(i), splitRowArrayList.get(i), pBSplitArrayList.get(i), pBCumulativeArrayList.get(i));
 		}
 		
