@@ -91,7 +91,6 @@ public class HitCounter implements ActionListener, MouseListener {
 	private ArrayList<String> splitTitles;
 	private int currentTitle = 0;
 	private ArrayList<ArrayList<SplitRow>> splitRowArrayList;
-	private int currentSplitRows = 0;
 	
 	private JTextPane totalTextPane;
 	private JTextPane totalHitsTextPane;
@@ -102,7 +101,7 @@ public class HitCounter implements ActionListener, MouseListener {
 	private ArrayList<ArrayList<String>> pBSplitArrayList;
 	private ArrayList<ArrayList<String>> pBCumulativeArrayList;
 	
-	private int currentSplit = 0;
+	private ArrayList<Integer> currentSplits;
 	
 	SimpleAttributeSet left;
 	SimpleAttributeSet center;
@@ -134,16 +133,22 @@ public class HitCounter implements ActionListener, MouseListener {
 		pBSplitArrayList = new ArrayList<ArrayList<String>>();
 		pBCumulativeArrayList = new ArrayList<ArrayList<String>>();
 		
+		currentSplits = new ArrayList<Integer>();
+		
 		// Load user save
 		loadProgram();
 		
 		if (!hasSavedPB) {
 			
+			splitNames.add(new ArrayList<String>());
+    		pBSplitArrayList.add(new ArrayList<String>());
+    		pBCumulativeArrayList.add(new ArrayList<String>());
+    		
+    		currentSplits.add(0);
+    		
 			loadZOOTSplits();
-			
-			pBSplitArrayList.add(new ArrayList<String>());
-			
-			for (int i = 0; i < splitNames.size(); i++) {
+						
+			for (int i = 0; i < splitNames.get(currentTitle).size(); i++) {
 				
 				pBSplitArrayList.get(currentTitle).add("0");
 			}
@@ -153,7 +158,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		setUpLoadMenuItems();
 		
 		// Need to load PB info before here
-		makePBCumulativeArrayList(pBCumulativeArrayList.get(currentTitle), pBSplitArrayList.get(0));
+		makePBCumulativeArrayList(pBCumulativeArrayList.get(currentTitle), pBSplitArrayList.get(currentTitle));
 		
 		// Need Split names & PB Info before here.
 		setUpSplitRows();
@@ -202,7 +207,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		int nowhits = Integer.valueOf(row.getHits());
 		int pbhits = Integer.valueOf(row.getPB());
 		
-		if (rowNum == currentSplit) {
+		if (rowNum == currentSplits.get(currentTitle)) {
 			return rgbHLBlue;
 		}
 		else if (nowhits == 0) {
@@ -250,7 +255,7 @@ public class HitCounter implements ActionListener, MouseListener {
 
 			SplitRow row = splitrowarray.get(i);
 			
-			if (i == currentSplit) {
+			if (i == currentSplits.get(currentTitle)) {
 				
 				currentSplitpos = i;
 				
@@ -332,7 +337,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		for (int i = 0; i < currentsplitrow.size(); i++) {
 			
 			if (currentrow.getName().equals(currentsplitrow.get(i).getName())) {
-				currentSplit = i;
+				currentSplits.set(currentTitle, i);
 			}
 		}
 		
@@ -341,13 +346,13 @@ public class HitCounter implements ActionListener, MouseListener {
 	
 	public void setCurrentSplit(int current) {
 		
-		currentSplit = current;
+		currentSplits.set(currentTitle, current);
 		
 		return;
 	}
 	
 	public int getCurrentSplit() {
-		return currentSplit;
+		return currentSplits.get(currentTitle);
 	}
 	
 	/****************************
@@ -498,7 +503,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		setPBButton.setPreferredSize(new Dimension(100, 20));
 		setPBButton.setMaximumSize(new Dimension(100, 20));
 		
-		uploadNewTitleButton = new JButton("Upload New Run");
+		uploadNewTitleButton = new JButton("Upload Run");
 		uploadNewTitleButton.addActionListener(this);
 		
 		uploadNewTitleButton.setMinimumSize(new Dimension(100, 20));
@@ -514,6 +519,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		for (int i = 0; i < splitNames.size(); i++) {
 			
 			splitRowArrayList.add(new ArrayList<SplitRow>());
+
 			createSplitRows(splitNames.get(i), splitRowArrayList.get(i), pBSplitArrayList.get(i), pBCumulativeArrayList.get(i));
 		}
 		
@@ -885,7 +891,7 @@ public class HitCounter implements ActionListener, MouseListener {
 			splitrowarray.get(i).resetRowHits();
 		}
 		
-		currentSplit = 0;
+		currentSplits.set(currentTitle, 0);
 		highlightRows(splitrowarray.get(0), splitrowarray, pbcumulativelist, null);
 		
 		return;
@@ -908,10 +914,8 @@ public class HitCounter implements ActionListener, MouseListener {
 		makePBCumulativeArrayList(pbcumulativelist, pbsplitlist);
 		
 		for (int i = 0; i < splitrowarray.size(); i++) {
-			
-			String pBText = pbsplitlist.get(i) + "(" + pbcumulativelist.get(i) + ")";
-			
-			splitrowarray.get(i).setPB(pbsplitlist.get(i), pBText);
+						
+			splitrowarray.get(i).setPB(pbsplitlist.get(i), pbcumulativelist.get(i));
 		}
 		
 		String pBTotalText = pbcumulativelist.get(pbcumulativelist.size() - 1);
@@ -926,7 +930,7 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void incrementCurrentSplitHit(ArrayList<SplitRow> splitrowarray, ArrayList<String> pbcumulativelist) {
 		
-		SplitRow currentRow = splitrowarray.get(currentSplit);
+		SplitRow currentRow = splitrowarray.get(currentSplits.get(currentTitle));
 		currentRow.setHits(currentRow.getHitsFromPane());
 
 		String updatedHitString = String.valueOf(Integer.parseInt(currentRow.getHits()) + 1);
@@ -942,7 +946,7 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void decrementCurrentSplitHit(ArrayList<SplitRow> splitrowarray, ArrayList<String> pbcumulativelist) {
 		
-		SplitRow currentRow = splitrowarray.get(currentSplit);
+		SplitRow currentRow = splitrowarray.get(currentSplits.get(currentTitle));
 		currentRow.setHits(currentRow.getHitsFromPane());
 		
 		int updatedHitInt = Integer.parseInt(currentRow.getHits()) - 1;
@@ -980,16 +984,17 @@ public class HitCounter implements ActionListener, MouseListener {
 			}
 		};
 		
-		splitrowarray.get(currentSplit).setHits(splitrowarray.get(currentSplit).getHitsFromPane());
+		splitrowarray.get(currentSplits.get(currentTitle)) // -> Next Line
+					 .setHits(splitrowarray.get(currentSplits.get(currentTitle)).getHitsFromPane());
 		
-		currentSplit = currentSplit + 1;
+		currentSplits.set(currentTitle, currentSplits.get(currentTitle) + 1);
 
-		if (currentSplit < splitrowarray.size()) {
+		if (currentSplits.get(currentTitle) < splitrowarray.size()) {
 
-			highlightRows(splitrowarray.get(currentSplit), splitrowarray, pbcumulativelist, highlightCallback);
+			highlightRows(splitrowarray.get(currentSplits.get(currentTitle)), splitrowarray, pbcumulativelist, highlightCallback);
 		}
 		else {
-			currentSplit = splitrowarray.size() - 1;
+			currentSplits.set(currentTitle, splitrowarray.size() - 1);
 		}
 		
 		menuBar.requestFocusInWindow();
@@ -1019,6 +1024,8 @@ public class HitCounter implements ActionListener, MouseListener {
 		    		pBSplitArrayList.add(new ArrayList<String>());
 		    		pBCumulativeArrayList.add(new ArrayList<String>());
 		    		
+		    		currentSplits.add(0);
+
 		    		line = br.readLine();
 		    		splitTitles.add(line);
 		    		
@@ -1072,6 +1079,8 @@ public class HitCounter implements ActionListener, MouseListener {
 		    		pBSplitArrayList.add(new ArrayList<String>());
 		    		pBCumulativeArrayList.add(new ArrayList<String>());
 		    		
+		    		currentSplits.add(0);
+
 		    		loadZOOTSplits();
 		    		
 		    		// Load first line
@@ -1163,9 +1172,10 @@ public class HitCounter implements ActionListener, MouseListener {
 	    		pBSplitArrayList.add(new ArrayList<String>());
 	    		pBCumulativeArrayList.add(new ArrayList<String>());
 	    		
+	    		currentSplits.add(0);
+	    		
 	    		splitTitles.add(line);
 	    		
-	    		int readcounter = 0;
 	    		while ((line = br.readLine()) != null) {
 			    	// process the line.
 	    			if (line.equals("")) {
@@ -1176,18 +1186,12 @@ public class HitCounter implements ActionListener, MouseListener {
 	    					throw new RuntimeException();
 						}
 	    			}
-	    			else if ((readcounter % 2) == 0) {
+	    			else {
 						
 	    				splitNames.get(titlenum).add(line);
-	    				
-	    				readcounter = readcounter + 1;
-					}
-	    			else {
-	    				
-				    	pBSplitArrayList.get(titlenum).add(line);
-				    	
-	    				readcounter = readcounter + 1;
-	    			}
+				    	pBSplitArrayList.get(titlenum).add("0");
+				    	pBCumulativeArrayList.get(titlenum).add("0");
+					}	
 			    }
 		    }
 		}
@@ -1208,6 +1212,7 @@ public class HitCounter implements ActionListener, MouseListener {
 			new HitCounter();
 		} catch (Exception e) {
 			System.out.println("Exception Occurred: " + e.getMessage());
+			e.printStackTrace();
 			System.exit(1);
 		}
 	}
@@ -1223,10 +1228,10 @@ public class HitCounter implements ActionListener, MouseListener {
 			saveProgram();
 		}
 		else if (e.getSource() == incHitMenuItem) {
-			incrementCurrentSplitHit(splitRowArrayList.get(currentSplitRows), pBCumulativeArrayList.get(currentSplitRows));
+			incrementCurrentSplitHit(splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle));
 		}
 		else if (e.getSource() == decHitMenuItem) {
-			decrementCurrentSplitHit(splitRowArrayList.get(currentSplitRows), pBCumulativeArrayList.get(currentSplitRows));
+			decrementCurrentSplitHit(splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle));
 		}
 		else if (e.getSource() == nextSplitMenuItem) {
 			BoundedRangeModel scrollmodel = scrollPane.getVerticalScrollBar().getModel();
@@ -1244,19 +1249,32 @@ public class HitCounter implements ActionListener, MouseListener {
 				}
 			};
 
-			goToNextSplit(fixViewCallback, scrollpos, splitRowArrayList.get(currentSplitRows), // -> Next Line
-						  pBCumulativeArrayList.get(currentSplitRows));
+			goToNextSplit(fixViewCallback, scrollpos, splitRowArrayList.get(currentTitle), // -> Next Line
+						  pBCumulativeArrayList.get(currentTitle));
 		}
 		else if (e.getSource() == resetRunButton) {
-			resetRun(splitRowArrayList.get(currentSplitRows), pBCumulativeArrayList.get(currentSplitRows), // -> Next Line
-					 pBSplitArrayList.get(currentSplitRows));
+			resetRun(splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle), // -> Next Line
+					 pBSplitArrayList.get(currentTitle));
 		}
 		else if (e.getSource() == setPBButton) {
-			setPB(splitRowArrayList.get(currentSplitRows), pBCumulativeArrayList.get(currentSplitRows), // -> Next Line
-				  pBSplitArrayList.get(currentSplitRows));
+			setPB(splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle), // -> Next Line
+				  pBSplitArrayList.get(currentTitle));
 		}
 		else if (e.getSource() == uploadNewTitleButton) {
-			uploadNewTitle(splitTitles.size());
+			
+			int increasedsize = splitTitles.size();
+			uploadNewTitle(increasedsize);
+			splitRowArrayList.add(new ArrayList<SplitRow>());
+			createSplitRows(splitNames.get(increasedsize), splitRowArrayList.get(increasedsize), // -> Next Line
+							pBSplitArrayList.get(increasedsize), pBCumulativeArrayList.get(increasedsize));
+			loadDifferentTitle(increasedsize);
+			
+			JMenuItem item = new JMenuItem(splitTitles.get(increasedsize));
+			item.addActionListener(this);
+			item.setActionCommand(String.valueOf(increasedsize));
+			
+			loadMenuItems.add(item);
+			loadMenu.add(item);
 		}
 		else if (isLoadMenuItem(e)) {
 			
@@ -1295,8 +1313,8 @@ public class HitCounter implements ActionListener, MouseListener {
 				public void run() {
 					JComponent source = (JComponent) e.getSource();
 
-					highlightRows(source, splitRowArrayList.get(currentSplitRows), // -> Next Line
-								  pBCumulativeArrayList.get(currentSplitRows), null);
+					highlightRows(source, splitRowArrayList.get(currentTitle), // -> Next Line
+								  pBCumulativeArrayList.get(currentTitle), null);
 				}
 			};
 			
