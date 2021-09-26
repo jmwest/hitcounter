@@ -6,6 +6,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.GroupLayout;
@@ -47,6 +48,8 @@ public class SplitRow extends JPanel implements MouseListener {
      *****************************/
     
     private HitCounter parentCounter;
+    private ArrayList<SplitRow> parentSplitRow;
+    private ArrayList<String> parentPBCumulativeList;
     
 	private JTextPane splitNameTextPane;
 	private JTextPane splitCurrentHitsPane;
@@ -68,8 +71,9 @@ public class SplitRow extends JPanel implements MouseListener {
 	 *****************************/
 	
 	//
-	public SplitRow(HitCounter parent, String splitText, String splitCurrentHits, String splitHitDifference, String pbHits,
-					String pbPriorHits, Color splitColor) {
+	public SplitRow(HitCounter parent, String splitText, String splitCurrentHits, String splitHitDifference, // -> Next Line
+					String pbHits, String pbPriorHits, Color splitColor, ArrayList<SplitRow> parentSR, // -> Next Line
+					ArrayList<String> parentPBCL) {
 		
 		// Create Alignments
 		left = new SimpleAttributeSet();
@@ -78,8 +82,10 @@ public class SplitRow extends JPanel implements MouseListener {
 		center = new SimpleAttributeSet();
 		StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER);
 		
-		//
+		// Initialize Split Row Private Variables
 		parentCounter = parent;
+		parentSplitRow = parentSR;
+		parentPBCumulativeList = parentPBCL;
 		splitNameString = splitText;
 		splitHitsString = splitCurrentHits;
 		splitDiffString = splitHitDifference;
@@ -95,29 +101,30 @@ public class SplitRow extends JPanel implements MouseListener {
 	}
 	
 	//
-	public SplitRow(HitCounter parent, String splitText, String splitHitDifference, String pbText,
-					String pbPriorHits, Color splitColor) {
+	public SplitRow(HitCounter parent, String splitText, String splitHitDifference, String pbText, // -> Next Line
+					String pbPriorHits, Color splitColor, ArrayList<SplitRow> parentSR, ArrayList<String> parentPBCL) {
 		
-		this(parent, splitText, "0", splitHitDifference, pbText, pbPriorHits, splitColor);
+		this(parent, splitText, "0", splitHitDifference, pbText, pbPriorHits, splitColor, parentSR, parentPBCL);
 	}
 	
 	//
-	public SplitRow(HitCounter parent, String splitText, Color splitColor) {
+	public SplitRow(HitCounter parent, String splitText, Color splitColor, // -> Next Line
+					ArrayList<SplitRow> parentSR, ArrayList<String> parentPBCL) {
 		
-		this(parent, splitText, "0", "0", "0", "0", splitColor);
+		this(parent, splitText, "0", "0", "0", "0", splitColor, parentSR, parentPBCL);
 	}
 	
 	//
-	public SplitRow(HitCounter parent, Color splitColor) {
+	public SplitRow(HitCounter parent, Color splitColor, ArrayList<SplitRow> parentSR, ArrayList<String> parentPBCL) {
 		
-		this(parent, "", "0", "0", "0", "0", splitColor);
+		this(parent, "", "0", "0", "0", "0", splitColor, parentSR, parentPBCL);
 	}
 	
 	/****************************
 	 *  *
 	 ****************************/
 	
-	private void createSplitTextPanes(String splitText, String splitCurrentHits, String splitHitDifference,
+	private void createSplitTextPanes(String splitText, String splitCurrentHits, String splitHitDifference, // -> Next Line
 									  String pbPriorHits, Color splitColor) {
 		
 		// Split Name
@@ -145,7 +152,7 @@ public class SplitRow extends JPanel implements MouseListener {
 			public void focusLost(FocusEvent e) {
 				parseTextPaneInput();
 				updateHitDifference();
-				parentCounter.highlightRows(thisRow, null);
+				parentCounter.highlightRows(thisRow, parentSplitRow, parentPBCumulativeList, null);
 		    }
 		});
 		
@@ -184,14 +191,14 @@ public class SplitRow extends JPanel implements MouseListener {
 		
 		// Get new color for row
 		splitDiffString = getHitDifference(splitCurrentHitsPane.getText(), pbHitString);
-		Color splitColor = new Color(parentCounter.determineHighlightColor(this));
+		Color splitColor = new Color(parentCounter.determineHighlightColor(this, parentSplitRow));
 		
 		// Make changes to UI
 		if (!rowColor.equals(splitColor)) {
 			highlightRow(splitColor);
 		}
 		
-		parentCounter.updateHitDifferences(this);
+		parentCounter.updateHitDifferences(this, parentSplitRow, parentPBCumulativeList);
 		
 		return;
 	}
@@ -205,7 +212,7 @@ public class SplitRow extends JPanel implements MouseListener {
 	}
 	
 	//
-	private void setTextPaneAttributes(SimpleAttributeSet alignment, JTextPane pane, String paneText,
+	private void setTextPaneAttributes(SimpleAttributeSet alignment, JTextPane pane, String paneText, // -> Next Line
 										boolean editable, boolean bold, Color foregroundColor) {
 		
 		SimpleAttributeSet attributeSet = new SimpleAttributeSet();
@@ -330,6 +337,12 @@ public class SplitRow extends JPanel implements MouseListener {
 	 *******************************/
 	
 	//
+	public String getSplitName() {
+		
+		return splitNameString;
+	}
+	
+	//
 	public String getPB() {
 		
 		return pbHitString;
@@ -351,6 +364,7 @@ public class SplitRow extends JPanel implements MouseListener {
 		return splitHitsString;
 	}
 	
+	//
 	public String getHitsFromPane() {
 		
 		return splitCurrentHitsPane.getText();
@@ -397,8 +411,8 @@ public class SplitRow extends JPanel implements MouseListener {
 				
 				@Override
 				public void run() {
-					parentCounter.setCurrentSplitFromRow(thisRow);
-					parentCounter.highlightRows(thisRow, null);
+					parentCounter.setCurrentSplitFromRow(thisRow, parentSplitRow);
+					parentCounter.highlightRows(thisRow, parentSplitRow, parentPBCumulativeList, null);
 				}
 			};
 			
