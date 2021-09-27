@@ -217,7 +217,7 @@ public class SplitRow extends JPanel implements MouseListener {
 		
 		SimpleAttributeSet attributeSet = new SimpleAttributeSet();
 		StyleConstants.setForeground(attributeSet, foregroundColor);
-		StyleConstants.setBackground(attributeSet, new Color(1.0f, 1.0f, 1.0f, 0.0f));	
+		StyleConstants.setBackground(attributeSet, new Color(0.0f, 0.0f, 0.0f, 0.0f));	
 		StyleConstants.setBold(attributeSet, bold);
 		pane.setCharacterAttributes(attributeSet, true);
 		

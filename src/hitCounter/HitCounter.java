@@ -2,27 +2,33 @@ package hitCounter;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoundedRangeModel;
 import javax.swing.GroupLayout;
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.KeyStroke;
 import javax.swing.LayoutStyle;
+import javax.swing.OverlayLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.GroupLayout.ParallelGroup;
 import javax.swing.GroupLayout.SequentialGroup;
@@ -32,7 +38,9 @@ import javax.swing.text.StyledDocument;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -53,50 +61,72 @@ public class HitCounter implements ActionListener, MouseListener {
     final static int diffWidth=50;
     final static int pbWidth=50;
 
+	final static int splitPanelWidth = splitWidth + hitWidth + diffWidth + pbWidth + 10*5;
+	final static int scrollPaneHeight = 400;
+	private int splitPanelHeight = 0;
+	
     /*****************************
      * Declare private variables *
      *****************************/
     
-    private String filePathString = System.getProperty("user.dir") + System.getProperty("file.separator") // -> Next Line
+    // File paths
+    final static String filePathString = System.getProperty("user.dir") + System.getProperty("file.separator") // -> Next Line
 											+ "resources" + System.getProperty("file.separator");
-    private String userSaveFilePathString = filePathString + "usersave.txt";
-    private String titleFilePathString = filePathString + "upload_title.txt";
-
+    final static String userSaveFilePathString = filePathString + "usersave.txt";
+    final static String titleFilePathString = filePathString + "upload_title.txt";
+    final static String defaultBackgroundImageString = "The-Legend-of-Zelda-Ocarina-of-Time-Title-Screen.png";
 	
     private boolean hasSavedPB = true;
     
+    // MenuBar Items
     private JMenuBar menuBar;
 	private JMenu fileMenu;
 	private JMenu editMenu;
+	private JMenu actionMenu;
+	
+	//		File Menu Items
 	private JMenuItem saveMenuItem;
 	private JMenu loadMenu;
 	private ArrayList<JMenuItem> loadMenuItems;
+	
+	//		Edit Menu Items
+	private JMenuItem addBackgroundItem;
+
+	//		Action Menu Items
 	private JMenuItem incHitMenuItem;
 	private JMenuItem decHitMenuItem;
 	private JMenuItem nextSplitMenuItem;
 	
+	// View Items
 	private JFrame frame;
 	private JPanel panel;
+	private JPanel comboPanel;
 	private JPanel splitsPanel;
+	private JLabel transparencyLabel;
+	private JLabel backgroundLabel;
 	private JScrollPane scrollPane;
 	
+	// Buttons
 	private JButton resetRunButton;
 	private JButton setPBButton;
 	private JButton uploadNewTitleButton;
 	
+	// Header Panes
 	private JTextPane splitNameHeader;
 	private JTextPane currentHitsHeader;
 	private JTextPane hitDifferenceHeader;
 	private JTextPane pBHitsHeader;
 	
-	private ArrayList<String> splitTitles;
-	private int currentTitle = 0;
-	private ArrayList<ArrayList<SplitRow>> splitRowArrayList;
-	
+	// Total Panes
 	private JTextPane totalTextPane;
 	private JTextPane totalHitsTextPane;
 	private JTextPane totalDifferenceTextPane;
 	private JTextPane totalPBHitsTextPane;
+	
+	// Split Related Variables
+	private ArrayList<String> splitTitles;
+	private int currentTitle = 0;
+	private ArrayList<ArrayList<SplitRow>> splitRowArrayList;
 	
 	private ArrayList<ArrayList<String>> splitNames;
 	private ArrayList<ArrayList<String>> pBSplitArrayList;
@@ -104,6 +134,10 @@ public class HitCounter implements ActionListener, MouseListener {
 	
 	private ArrayList<Integer> currentSplits;
 	
+	private ArrayList<BufferedImage> backgroundImages;
+	private ArrayList<String> backgroundImgFileNames;
+	
+	// Attribute Sets
 	SimpleAttributeSet left;
 	SimpleAttributeSet center;
 	
@@ -136,6 +170,9 @@ public class HitCounter implements ActionListener, MouseListener {
 		
 		currentSplits = new ArrayList<Integer>();
 		
+		backgroundImages = new ArrayList<BufferedImage>();
+		backgroundImgFileNames = new ArrayList<String>();
+		
 		// Load user save
 		loadProgram();
 		
@@ -146,6 +183,8 @@ public class HitCounter implements ActionListener, MouseListener {
     		pBCumulativeArrayList.add(new ArrayList<String>());
     		
     		currentSplits.add(0);
+    		backgroundImages.add(openResourceImageFile(defaultBackgroundImageString));
+    		backgroundImgFileNames.add(defaultBackgroundImageString);
     		
 			loadZOOTSplits();
 						
@@ -425,9 +464,11 @@ public class HitCounter implements ActionListener, MouseListener {
 		menuBar = new JMenuBar();
 		fileMenu = new JMenu("File");
 		editMenu = new JMenu("Edit");
+		actionMenu = new JMenu("Action");
 		
 		menuBar.add(fileMenu);
 		menuBar.add(editMenu);
+		menuBar.add(actionMenu);
 		
 		/**************************************
 		 *  Create MenuItems and handle them. *
@@ -444,6 +485,12 @@ public class HitCounter implements ActionListener, MouseListener {
 		fileMenu.add(loadMenu);
 		
 		// Edit Menu Items
+		addBackgroundItem = new JMenuItem("Change Background");
+		addBackgroundItem.addActionListener(this);
+
+		editMenu.add(addBackgroundItem);
+		
+		// Action Menu Items
 		incHitMenuItem = new JMenuItem("Add Hit");
 		incHitMenuItem.addActionListener(this);
 		incHitMenuItem.setAccelerator(KeyStroke.getKeyStroke('h'));
@@ -456,9 +503,9 @@ public class HitCounter implements ActionListener, MouseListener {
 		nextSplitMenuItem.addActionListener(this);
 		nextSplitMenuItem.setAccelerator(KeyStroke.getKeyStroke('n'));
 
-		editMenu.add(incHitMenuItem);
-		editMenu.add(decHitMenuItem);
-		editMenu.add(nextSplitMenuItem);
+		actionMenu.add(incHitMenuItem);
+		actionMenu.add(decHitMenuItem);
+		actionMenu.add(nextSplitMenuItem);
 		
 		return;
 	}
@@ -482,16 +529,21 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void setUpViewComponents() {
 		
+		// Set Frame and Panels
 		frame = new JFrame();
 		panel = new JPanel();
+		comboPanel = new JPanel();
 		splitsPanel = new JPanel();
+		transparencyLabel = new JLabel();
 		scrollPane = new JScrollPane();
 		
+		// Set ScrollPane
 		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(0,0));
 		scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(0,0));
 
+		// Set Buttons
 		resetRunButton = new JButton("Reset Run");
 		resetRunButton.addActionListener(this);
 		
@@ -532,23 +584,57 @@ public class HitCounter implements ActionListener, MouseListener {
 	//
 	private void setPanels() {
 		
+		// Set Panel
 		panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 		panel.setOpaque(true);
 		panel.setLayout(createTopLeveGroupLayout(panel));
 		panel.setBackground(Color.black);
 		
+		// Set ComboPanel
+		comboPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		comboPanel.setOpaque(true);
+		
+		OverlayLayout comboLayout = new OverlayLayout(comboPanel);
+		comboPanel.setLayout(comboLayout);
+
+		// Set Splits Panel
 		splitsPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 		splitsPanel.setOpaque(false);
 		splitsPanel.setLayout(createSplitsGroupLayout(splitsPanel, splitRowArrayList.get(currentTitle)));
-		
-		int splitPanelWidth = splitWidth + hitWidth + diffWidth + pbWidth + 10*5;
-		int splitPanelHeight = (27*splitNames.get(currentTitle).size());
+		splitsPanel.setBackground(new Color(0.0f, 0.0f, 0.0f, 0.5f));
+
+		splitPanelHeight = (27*splitNames.get(currentTitle).size());
 		setPanelDimensions(splitsPanel, new Dimension(splitPanelWidth, splitPanelHeight));
 
 		System.out.println("Split #: " + String.valueOf(splitNames.get(currentTitle).size()));
 		
+		// Set Transparency Label
+		transparencyLabel = new JLabel();
+		transparencyLabel.setOpaque(true);
+		transparencyLabel.setMinimumSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		transparencyLabel.setPreferredSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		transparencyLabel.setMaximumSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		transparencyLabel.setBackground(new Color(0.0f, 0.0f, 0.0f, 0.5f));
+		transparencyLabel.setAlignmentX(0.5f);
+		transparencyLabel.setAlignmentY(0.5f);
+		
+		// Set BackgroundLabel
+		backgroundLabel = new JLabel(getScaledLabelIcon(backgroundImages.get(currentTitle), splitPanelWidth, scrollPaneHeight));
+		backgroundLabel.setOpaque(true);
+		backgroundLabel.setMinimumSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		backgroundLabel.setPreferredSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		backgroundLabel.setMaximumSize(new Dimension(splitPanelWidth, scrollPaneHeight));
+		backgroundLabel.setBackground(new Color(0.0f, 0.0f, 0.0f, 1.0f));
+		backgroundLabel.setAlignmentX(0.5f);
+		backgroundLabel.setAlignmentY(0.5f);
+		
+		// Add Components to ComboPanel
+		comboPanel.add(scrollPane);
+		comboPanel.add(transparencyLabel);
+		comboPanel.add(backgroundLabel);
+		
 		// Set ScrollPane
-		scrollPane.setPreferredSize(new Dimension(splitPanelWidth, 400));
+		scrollPane.setPreferredSize(new Dimension(splitPanelWidth, scrollPaneHeight));
 		scrollPane.setViewportView(splitsPanel);
 		scrollPane.getViewport().setOpaque(false);
 		scrollPane.setOpaque(false);
@@ -587,6 +673,7 @@ public class HitCounter implements ActionListener, MouseListener {
 			
 			splitrow.addMouseListener(this);
 			splitrow.setName(splits.get(i));
+			splitrow.setOpaque(false);
 
 			currentGameSplits.add(splitrow);
 		}
@@ -721,14 +808,48 @@ public class HitCounter implements ActionListener, MouseListener {
 		int splitPanelHeight = (27*splitNames.get(currentTitle).size());
 		setPanelDimensions(splitsPanel, new Dimension(splitPanelWidth, splitPanelHeight));
 		
+		changeBackgroundImage();
+		
 		System.out.println("Split #: " + String.valueOf(splitNames.get(currentTitle).size()));
 
 		splitsPanel.validate();
+		
+		panel.repaint();
+		panel.revalidate();
 		
 		updateHitDifferences(splitRowArrayList.get(currentTitle).get(currentSplits.get(currentTitle)), // -> Next Line
 							 splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle));
 		
 		return;
+	}
+	
+	//
+	private ImageIcon getScaledLabelIcon(BufferedImage srcImg, int width, int height) {
+		
+		BufferedImage scldImg = getScaledImage(srcImg, width, height);
+		
+		ImageIcon icon = new ImageIcon(scldImg);
+		
+		return icon;
+	}
+	
+	//
+	private BufferedImage getScaledImage(BufferedImage srcImg, int w, int h) {
+		
+		if (w < 1) {
+			w = 100;
+		}
+		
+		if (h < 1) {
+			h = 100;
+		}
+		
+		BufferedImage newImg = new BufferedImage(w, h, BufferedImage.TYPE_4BYTE_ABGR);
+		Graphics g = newImg.createGraphics();
+		g.drawImage(srcImg, 0, 0, w, h, null);
+		g.dispose();
+		
+		return newImg;
 	}
 	
 	/*****************************
@@ -823,7 +944,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		// Add all Groups and Components to top level
 		topLevelParallelGroup.addGroup(buttonSequentialGroup);
 		topLevelParallelGroup.addGroup(headerSequentialGroup);
-		topLevelParallelGroup.addComponent(scrollPane);
+		topLevelParallelGroup.addComponent(comboPanel);
 		topLevelParallelGroup.addGroup(totalSequentialGroup);
 		
 		// Finalize Horizontal Layout
@@ -863,7 +984,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 30, 30);
 		columnSequentialGroup.addGroup(headerParallelGroup);
 		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 5, 5);
-		columnSequentialGroup.addComponent(scrollPane);
+		columnSequentialGroup.addComponent(comboPanel);
 		columnSequentialGroup.addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED, 15, 15);
 		columnSequentialGroup.addGroup(totalParallelGroup);
 		
@@ -929,6 +1050,14 @@ public class HitCounter implements ActionListener, MouseListener {
 		setTextPaneAttributes(center, totalPBHitsTextPane, pBTotalText, false, true, Color.white);
 		
 		resetRun(splitrowarray, pbcumulativelist, pbsplitlist);
+		
+		return;
+	}
+	
+	//
+	private void changeBackgroundImage() {
+		
+		backgroundLabel.setIcon(getScaledLabelIcon(backgroundImages.get(currentTitle), splitPanelWidth, scrollPaneHeight));
 		
 		return;
 	}
@@ -1024,6 +1153,23 @@ public class HitCounter implements ActionListener, MouseListener {
 		    
 		    if((line = br.readLine()) != null) {
 		    	
+		    	if (line.equals("--------------------")) {
+					
+		    		while ((line = br.readLine()) != null) {
+		    			
+		    			if (line.equals("")) { break; }
+		    			
+		    			backgroundImgFileNames.add(line);
+		    			System.out.println(line);
+		    			
+		    			File bgfile = new File(filePathString + line);
+		    			BufferedImage bgimg = openImageFile(bgfile);
+		    			backgroundImages.add(bgimg);
+		    		}
+		    		
+		    		line = br.readLine();
+				}
+		    	
 		    	if (line.equals("----------")) {
 					
 		    		splitNames.add(new ArrayList<String>());
@@ -1031,6 +1177,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		    		pBCumulativeArrayList.add(new ArrayList<String>());
 		    		
 		    		currentSplits.add(0);
+		    		backgroundImages.add(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
 
 		    		line = br.readLine();
 		    		splitTitles.add(line);
@@ -1066,6 +1213,7 @@ public class HitCounter implements ActionListener, MouseListener {
 				    		pBCumulativeArrayList.add(new ArrayList<String>());
 				    		
 				    		currentSplits.add(0);
+				    		backgroundImages.add(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
 						}
 		    			else if ((readcounter % 2) == 0) {
 							
@@ -1088,6 +1236,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		    		pBCumulativeArrayList.add(new ArrayList<String>());
 		    		
 		    		currentSplits.add(0);
+		    		backgroundImages.add(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
 
 		    		loadZOOTSplits();
 		    		
@@ -1134,6 +1283,16 @@ public class HitCounter implements ActionListener, MouseListener {
 			// Writes text to a character-output stream
 			BufferedWriter bufferWriter = new BufferedWriter(saveWriter);
 			
+			bufferWriter.write("--------------------");
+			bufferWriter.newLine();
+			
+			for (int i = 0; i < backgroundImgFileNames.size(); i++) {
+				bufferWriter.write(backgroundImgFileNames.get(i));
+				bufferWriter.newLine();
+			}
+			
+			bufferWriter.newLine();
+			
 			for (int i = 0; i < splitRowArrayList.size(); i++) {
 
 				bufferWriter.write("----------");
@@ -1159,6 +1318,30 @@ public class HitCounter implements ActionListener, MouseListener {
  
 		} catch (IOException e) {
 			System.out.println("Excepton Occured: " + e.toString());
+			e.printStackTrace();
+		}
+		
+		return;
+	}
+	
+	//
+	private void saveImageToFile(String imagefilename, BufferedImage image) {
+		
+		File imagefile = new File(filePathString + imagefilename);
+		
+		if (!imagefile.exists()) {
+			File directory = new File(imagefile.getParent());
+			if (!directory.exists()) {
+				directory.mkdirs();
+			}
+		
+			try {
+				System.out.println("Wrote Image to: " + filePathString + imagefilename);
+			    ImageIO.write(image, "png", imagefile);
+			} catch (IOException e) {
+				System.out.println(e);
+				e.printStackTrace();
+			}
 		}
 		
 		return;
@@ -1183,6 +1366,14 @@ public class HitCounter implements ActionListener, MouseListener {
 	    		currentSplits.add(0);
 	    		
 	    		splitTitles.add(line);
+	    		
+	    		if((line = br.readLine()) != null) {
+	    			backgroundImgFileNames.add(line);
+	    			
+	    			File bgfile = new File(filePathString + line);
+	    			BufferedImage bgimg = openImageFile(bgfile);
+	    			backgroundImages.add(bgimg);
+	    		}
 	    		
 	    		while ((line = br.readLine()) != null) {
 			    	// process the line.
@@ -1210,6 +1401,90 @@ public class HitCounter implements ActionListener, MouseListener {
 		return;
 	}
 	
+	//
+	private void addBackgroundImageToSplit() {
+		
+		File bgfile = getBackgroundImageFromFile();
+		
+		if (bgfile == null) { return; }
+		
+		BufferedImage bgimg = openImageFile(bgfile);
+		backgroundImages.set(currentTitle, bgimg);
+		backgroundImgFileNames.set(currentTitle, bgfile.getName());
+		
+		changeBackgroundImage();
+		
+		saveImageToFile(bgfile.getName(), bgimg);
+
+		panel.repaint();
+		panel.revalidate();
+		
+		return;
+	}
+	
+	//
+	private File getBackgroundImageFromFile() {
+		
+		JFileChooser jfc = new JFileChooser();
+	    jfc.showDialog(null,"Please Select the Image File");
+	    jfc.setVisible(true);
+	    
+	    if (jfc.getSelectedFile() == null) {
+	    	return null;
+	    }
+	    
+	    File file = jfc.getSelectedFile();
+	    System.out.println("File name " + file.getName());
+		
+		return file;
+	}
+	
+	//
+	private BufferedImage openResourceImageFile(String filename) {
+		
+		System.out.println("Filename pass to openResourceImageFile: " + filename);
+		InputStream imageStream = this.getClass().getClassLoader().getResourceAsStream(filename);
+		
+		BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR);
+
+		if (imageStream != null) {
+
+			try {
+	            image = ImageIO.read(imageStream);
+			} catch (Exception ex) {
+				System.out.println(ex);
+				ex.printStackTrace();
+			}
+		}
+		else {
+            System.out.println("file " + filename + " does not exist");
+            
+    		File file = new File(filePathString + filename);
+            image = openImageFile(file);
+		}
+		
+		return image;
+	}
+	
+	//
+	private BufferedImage openImageFile(File file) {
+		
+		BufferedImage image = new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR);
+		
+		try {
+			System.out.println("Canonical path of target image: " + file.getCanonicalPath());
+            if (!file.exists()) {
+                System.out.println("file " + file + " does not exist");
+            }
+            image = ImageIO.read(file);
+		} catch (Exception ex) {
+			System.out.println(ex);
+			ex.printStackTrace();
+		}
+		
+		return image;
+	}
+	
 	/************
 	 *** Main ***
 	 ************/
@@ -1234,6 +1509,18 @@ public class HitCounter implements ActionListener, MouseListener {
 
 		if (e.getSource() == saveMenuItem) {
 			saveProgram();
+		}
+		else if (isLoadMenuItem(e)) {
+			
+			int loadTitleNum = Integer.parseInt(((JMenuItem) e.getSource()).getActionCommand());
+			
+			if (loadTitleNum != currentTitle) {
+				
+				loadDifferentTitle(loadTitleNum);
+			}
+		}
+		else if (e.getSource() == addBackgroundItem) {
+			addBackgroundImageToSplit();
 		}
 		else if (e.getSource() == incHitMenuItem) {
 			incrementCurrentSplitHit(splitRowArrayList.get(currentTitle), pBCumulativeArrayList.get(currentTitle));
@@ -1283,15 +1570,6 @@ public class HitCounter implements ActionListener, MouseListener {
 			
 			loadMenuItems.add(item);
 			loadMenu.add(item);
-		}
-		else if (isLoadMenuItem(e)) {
-			
-			int loadTitleNum = Integer.parseInt(((JMenuItem) e.getSource()).getActionCommand());
-			
-			if (loadTitleNum != currentTitle) {
-				
-				loadDifferentTitle(loadTitleNum);
-			}
 		}
 		
 		return;
