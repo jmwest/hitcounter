@@ -1178,6 +1178,7 @@ public class HitCounter implements ActionListener, MouseListener {
 		    		
 		    		currentSplits.add(0);
 		    		backgroundImages.add(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
+	    			backgroundImgFileNames.add("");
 
 		    		line = br.readLine();
 		    		splitTitles.add(line);
@@ -1214,6 +1215,7 @@ public class HitCounter implements ActionListener, MouseListener {
 				    		
 				    		currentSplits.add(0);
 				    		backgroundImages.add(new BufferedImage(1, 1, BufferedImage.TYPE_4BYTE_ABGR));
+			    			backgroundImgFileNames.add("");
 						}
 		    			else if ((readcounter % 2) == 0) {
 							
